@@ -1,7 +1,7 @@
 import { Module } from '@nestjs/common';
 import { TypeOrmModule } from '@nestjs/typeorm';
 import { SeedService } from './seed.service';
-import { SeedCommand } from './seed.command';
+import { SeedController } from './seed.controller';
 import { Companies } from '../entities/Companies';
 import { Providers } from '../entities/Providers';
 import { Users } from '../entities/Users';
@@ -26,6 +26,7 @@ import { AuditLogs } from '../entities/AuditLogs';
       AuditLogs,
     ]),
   ],
-  providers: [SeedService, SeedCommand],
+  controllers: [SeedController],
+  providers: [SeedService],
 })
 export class SeedModule {}

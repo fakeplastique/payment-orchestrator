@@ -2,19 +2,24 @@
 
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
+import { useAuth } from '@/lib/AuthContext';
 import styles from './Sidebar.module.scss';
 
 const NAV_ITEMS = [
-  { href: '/dashboard', label: 'Dashboard' },
-  { href: '/transactions', label: 'Transactions' },
-  { href: '/companies', label: 'Companies' },
-  { href: '/users', label: 'Users' },
-  { href: '/integrations', label: 'Integrations' },
-  { href: '/fraud-checks', label: 'Fraud Checks' },
+  { href: '/dashboard', label: 'Dashboard', roles: null },
+  { href: '/transactions', label: 'Transactions', roles: null },
+  { href: '/integrations', label: 'Integrations', roles: null },
+  { href: '/fraud-checks', label: 'Fraud Checks', roles: null },
+  { href: '/users', label: 'Users', roles: ['admin', 'manager'] },
 ];
 
 export function Sidebar() {
   const pathname = usePathname();
+  const { user } = useAuth();
+
+  const visibleItems = NAV_ITEMS.filter(
+    (item) => !item.roles || (user && item.roles.includes(user.role)),
+  );
 
   return (
     <aside className={styles.sidebar}>
@@ -22,7 +27,7 @@ export function Sidebar() {
         <span className={styles.logoText}>Orchestrator</span>
       </div>
       <nav className={styles.nav}>
-        {NAV_ITEMS.map(({ href, label }) => (
+        {visibleItems.map(({ href, label }) => (
           <Link
             key={href}
             href={href}

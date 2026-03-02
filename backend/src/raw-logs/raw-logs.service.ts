@@ -10,7 +10,14 @@ export class RawLogsService {
     private readonly repo: Repository<RawLogs>,
   ) {}
 
-  findAll() {
-    return this.repo.find({ relations: ['transaction'], order: { id: 'DESC' }, take: 100 });
+  findAll(companyId: string) {
+    return this.repo
+      .createQueryBuilder('rl')
+      .innerJoinAndSelect('rl.transaction', 't')
+      .innerJoin('t.integration', 'i')
+      .innerJoin('i.company', 'c', 'c.id = :companyId', { companyId })
+      .orderBy('rl.id', 'DESC')
+      .take(100)
+      .getMany();
   }
 }

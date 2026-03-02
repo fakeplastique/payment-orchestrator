@@ -10,11 +10,15 @@ export class FraudChecksService {
     private readonly repo: Repository<FraudChecks>,
   ) {}
 
-  findAll() {
-    return this.repo.find({
-      relations: ['transaction', 'rule'],
-      order: { checkDate: 'DESC' },
-      take: 100,
-    });
+  findAll(companyId: string) {
+    return this.repo
+      .createQueryBuilder('fc')
+      .innerJoinAndSelect('fc.transaction', 't')
+      .innerJoinAndSelect('fc.rule', 'r')
+      .innerJoin('t.integration', 'i')
+      .innerJoin('i.company', 'c', 'c.id = :companyId', { companyId })
+      .orderBy('fc.checkDate', 'DESC')
+      .take(100)
+      .getMany();
   }
 }

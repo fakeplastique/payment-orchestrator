@@ -1,6 +1,10 @@
 import { Module } from '@nestjs/common';
+import { APP_GUARD } from '@nestjs/core';
 import { ConfigModule, ConfigService } from '@nestjs/config';
 import { TypeOrmModule } from '@nestjs/typeorm';
+import { AuthModule } from './auth/auth.module';
+import { JwtAuthGuard } from './auth/guards/jwt-auth.guard';
+import { RolesGuard } from './auth/guards/roles.guard';
 import { CompaniesModule } from './companies/companies.module';
 import { ProvidersModule } from './providers/providers.module';
 import { UsersModule } from './users/users.module';
@@ -11,6 +15,7 @@ import { RawLogsModule } from './raw-logs/raw-logs.module';
 import { FraudRulesModule } from './fraud-rules/fraud-rules.module';
 import { FraudChecksModule } from './fraud-checks/fraud-checks.module';
 import { DashboardModule } from './dashboard/dashboard.module';
+import { SeedModule } from './seed/seed.module';
 
 @Module({
   imports: [
@@ -27,10 +32,13 @@ import { DashboardModule } from './dashboard/dashboard.module';
         database: config.get('DATABASE_NAME'),
         entities: [__dirname + '/entities/*{.ts,.js}'],
         synchronize: false,
+        migrations: [__dirname + '/migrations/*{.ts,.js}'],
+        migrationsRun: true,
         retryAttempts: 10,
         retryDelay: 3000,
       }),
     }),
+    AuthModule,
     CompaniesModule,
     ProvidersModule,
     UsersModule,
@@ -41,6 +49,11 @@ import { DashboardModule } from './dashboard/dashboard.module';
     FraudRulesModule,
     FraudChecksModule,
     DashboardModule,
+    SeedModule,
+  ],
+  providers: [
+    { provide: APP_GUARD, useClass: JwtAuthGuard },
+    { provide: APP_GUARD, useClass: RolesGuard },
   ],
 })
 export class AppModule {}

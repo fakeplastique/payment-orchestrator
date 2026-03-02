@@ -10,14 +10,19 @@ export class UsersService {
     private readonly repo: Repository<Users>,
   ) {}
 
-  findAll() {
-    return this.repo.find({ relations: ['company'] });
+  findAll(companyId: string) {
+    return this.repo.find({
+      where: { company: { id: companyId } },
+      relations: ['company'],
+      select: ['id', 'email', 'role', 'lastLoginDate', 'companyId'],
+    });
   }
 
-  findOne(id: string) {
+  findOne(id: string, companyId: string) {
     return this.repo.findOne({
-      where: { id },
+      where: { id, company: { id: companyId } },
       relations: ['company'],
+      select: ['id', 'email', 'role', 'lastLoginDate', 'companyId'],
     });
   }
 }

@@ -6,76 +6,86 @@ import { DataSource } from 'typeorm';
 export class DashboardService {
   constructor(@InjectDataSource() private readonly dataSource: DataSource) {}
 
-  async getStats(days: number) {
+  async getStats(days: number, companyId: string) {
     const [volumeOverTime, statusDistribution, revenueByCurrency, fraudStats, kpi] =
       await Promise.all([
-        this.getVolumeOverTime(days),
-        this.getStatusDistribution(days),
-        this.getRevenueByCurrency(days),
-        this.getFraudStats(days),
-        this.getKpi(days),
+        this.getVolumeOverTime(days, companyId),
+        this.getStatusDistribution(days, companyId),
+        this.getRevenueByCurrency(days, companyId),
+        this.getFraudStats(days, companyId),
+        this.getKpi(days, companyId),
       ]);
 
     return { volumeOverTime, statusDistribution, revenueByCurrency, fraudStats, kpi };
   }
 
-  private getVolumeOverTime(days: number) {
+  private getVolumeOverTime(days: number, companyId: string) {
     return this.dataSource.query(
-      `SELECT DATE_TRUNC('day', created_date) AS day,
+      `SELECT DATE_TRUNC('day', t.created_date) AS day,
               COUNT(*)::int AS count,
-              SUM(amount) AS total
-       FROM transactions
-       WHERE created_date >= NOW() - $1::int * INTERVAL '1 day'
+              SUM(t.amount) AS total
+       FROM transactions t
+       JOIN integrations i ON i.id = t.integration_id
+       WHERE t.created_date >= NOW() - $1::int * INTERVAL '1 day'
+         AND i.company_id = $2
        GROUP BY day
        ORDER BY day ASC`,
-      [days],
+      [days, companyId],
     );
   }
 
-  private getStatusDistribution(days: number) {
+  private getStatusDistribution(days: number, companyId: string) {
     return this.dataSource.query(
-      `SELECT status, COUNT(*)::int AS count
-       FROM transactions
-       WHERE created_date >= NOW() - $1::int * INTERVAL '1 day'
-       GROUP BY status`,
-      [days],
+      `SELECT t.status, COUNT(*)::int AS count
+       FROM transactions t
+       JOIN integrations i ON i.id = t.integration_id
+       WHERE t.created_date >= NOW() - $1::int * INTERVAL '1 day'
+         AND i.company_id = $2
+       GROUP BY t.status`,
+      [days, companyId],
     );
   }
 
-  private getRevenueByCurrency(days: number) {
+  private getRevenueByCurrency(days: number, companyId: string) {
     return this.dataSource.query(
-      `SELECT currency, SUM(amount) AS total, COUNT(*)::int AS count
-       FROM transactions
-       WHERE created_date >= NOW() - $1::int * INTERVAL '1 day'
-         AND status = 'success'
-       GROUP BY currency
+      `SELECT t.currency, SUM(t.amount) AS total, COUNT(*)::int AS count
+       FROM transactions t
+       JOIN integrations i ON i.id = t.integration_id
+       WHERE t.created_date >= NOW() - $1::int * INTERVAL '1 day'
+         AND t.status = 'success'
+         AND i.company_id = $2
+       GROUP BY t.currency
        ORDER BY total DESC`,
-      [days],
+      [days, companyId],
     );
   }
 
-  private getFraudStats(days: number) {
+  private getFraudStats(days: number, companyId: string) {
     return this.dataSource.query(
       `SELECT
          COUNT(*) FILTER (WHERE fc.is_flagged = true)::int AS flagged,
          COUNT(*) FILTER (WHERE fc.is_flagged = false)::int AS clean
        FROM fraud_checks fc
        JOIN transactions t ON t.id = fc.transaction_id
-       WHERE t.created_date >= NOW() - $1::int * INTERVAL '1 day'`,
-      [days],
+       JOIN integrations i ON i.id = t.integration_id
+       WHERE t.created_date >= NOW() - $1::int * INTERVAL '1 day'
+         AND i.company_id = $2`,
+      [days, companyId],
     );
   }
 
-  private getKpi(days: number) {
+  private getKpi(days: number, companyId: string) {
     return this.dataSource.query(
       `SELECT
          COUNT(*)::int AS total_transactions,
-         COUNT(*) FILTER (WHERE status = 'success')::int AS successful,
-         COUNT(*) FILTER (WHERE status = 'failed')::int AS failed,
-         COALESCE(SUM(amount) FILTER (WHERE status = 'success'), 0) AS total_revenue
-       FROM transactions
-       WHERE created_date >= NOW() - $1::int * INTERVAL '1 day'`,
-      [days],
+         COUNT(*) FILTER (WHERE t.status = 'success')::int AS successful,
+         COUNT(*) FILTER (WHERE t.status = 'failed')::int AS failed,
+         COALESCE(SUM(t.amount) FILTER (WHERE t.status = 'success'), 0) AS total_revenue
+       FROM transactions t
+       JOIN integrations i ON i.id = t.integration_id
+       WHERE t.created_date >= NOW() - $1::int * INTERVAL '1 day'
+         AND i.company_id = $2`,
+      [days, companyId],
     );
   }
 }

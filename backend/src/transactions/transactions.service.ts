@@ -11,26 +11,31 @@ export class TransactionsService {
     private readonly repo: Repository<Transactions>,
   ) {}
 
-  async findAll(query: TransactionQueryDto) {
-    const where: any = {};
-    if (query.status) where.status = query.status;
-    if (query.currency) where.currency = query.currency;
+  async findAll(query: TransactionQueryDto, companyId: string) {
+    const qb = this.repo
+      .createQueryBuilder('t')
+      .innerJoinAndSelect('t.integration', 'i')
+      .innerJoin('i.company', 'c', 'c.id = :companyId', { companyId })
+      .orderBy('t.createdDate', 'DESC')
+      .take(query.limit ?? 50)
+      .skip(query.offset ?? 0);
 
-    const [data, total] = await this.repo.findAndCount({
-      where,
-      relations: ['integration'],
-      order: { createdDate: 'DESC' },
-      take: query.limit ?? 50,
-      skip: query.offset ?? 0,
-    });
+    if (query.status) qb.andWhere('t.status = :status', { status: query.status });
+    if (query.currency) qb.andWhere('t.currency = :currency', { currency: query.currency });
 
+    const [data, total] = await qb.getManyAndCount();
     return { data, total };
   }
 
-  findOne(id: string) {
-    return this.repo.findOne({
-      where: { id },
-      relations: ['integration', 'fraudChecks', 'fraudChecks.rule', 'rawLogs'],
-    });
+  findOne(id: string, companyId: string) {
+    return this.repo
+      .createQueryBuilder('t')
+      .innerJoinAndSelect('t.integration', 'i')
+      .innerJoin('i.company', 'c', 'c.id = :companyId', { companyId })
+      .leftJoinAndSelect('t.fraudChecks', 'fc')
+      .leftJoinAndSelect('fc.rule', 'r')
+      .leftJoinAndSelect('t.rawLogs', 'rl')
+      .where('t.id = :id', { id })
+      .getOne();
   }
 }

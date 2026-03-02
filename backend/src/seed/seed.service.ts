@@ -1,6 +1,7 @@
 import { Injectable, Logger } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
+import * as bcrypt from 'bcrypt';
 import { Companies } from '../entities/Companies';
 import { Providers } from '../entities/Providers';
 import { Users } from '../entities/Users';
@@ -51,16 +52,17 @@ export class SeedService {
     );
     this.logger.log(`Created ${companies.length} companies`);
 
-    // 3. Users
+    // 3. Users (password: Password123!)
     const roles = ['admin', 'manager', 'viewer'];
     const users: Users[] = [];
+    const passwordHash = await bcrypt.hash('Password123!', 12);
     for (const company of companies) {
       for (let i = 0; i < 3; i++) {
         const role = roles[i];
         const user = await this.usersRepo.save(
           this.usersRepo.create({
             email: `${role}@${company.name.toLowerCase().replace(/\s/g, '')}.com`,
-            passwordHash: `$2b$10$fake_hash_${Math.random().toString(36).slice(2)}`,
+            passwordHash,
             role,
             lastLoginDate: this.randomDate(30),
             company,
@@ -70,6 +72,8 @@ export class SeedService {
       }
     }
     this.logger.log(`Created ${users.length} users`);
+    this.logger.log('Test credentials: any seeded email with password "Password123!"');
+    this.logger.log('Example: manager@techcorp.com / Password123!');
 
     // 4. Integrations
     const integrations: Integrations[] = [];

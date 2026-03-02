@@ -57,3 +57,16 @@ export interface FraudCheck {
   transaction?: { id: string; amount: string; currency: string; status: string };
   rule?: { name: string; threshold: string };
 }
+
+export interface AuthTokens {
+  accessToken: string;
+  refreshToken: string;
+  user: AuthUser;
+}
+
+export interface AuthUser {
+  id: string;
+  email: string;
+  role: string;
+  companyId: string;
+}

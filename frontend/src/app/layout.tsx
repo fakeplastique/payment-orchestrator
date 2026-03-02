@@ -1,6 +1,6 @@
 import type { Metadata } from 'next';
 import { Geist } from 'next/font/google';
-import { MasterLayout } from '@/components/layout/MasterLayout';
+import { AuthProvider } from '@/lib/AuthContext';
 import '@/styles/globals.scss';
 
 const geist = Geist({ subsets: ['latin'] });
@@ -18,7 +18,7 @@ export default function RootLayout({
   return (
     <html lang="en">
       <body className={geist.className}>
-        <MasterLayout>{children}</MasterLayout>
+        <AuthProvider>{children}</AuthProvider>
       </body>
     </html>
   );

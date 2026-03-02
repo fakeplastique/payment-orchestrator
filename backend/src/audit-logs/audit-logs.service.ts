@@ -10,7 +10,11 @@ export class AuditLogsService {
     private readonly repo: Repository<AuditLogs>,
   ) {}
 
-  findAll() {
-    return this.repo.find({ relations: ['user'], order: { performedDate: 'DESC' } });
+  findAll(companyId: string) {
+    return this.repo.find({
+      where: { user: { company: { id: companyId } } },
+      relations: ['user'],
+      order: { performedDate: 'DESC' },
+    });
   }
 }

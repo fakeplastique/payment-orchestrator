@@ -10,13 +10,16 @@ export class IntegrationsService {
     private readonly repo: Repository<Integrations>,
   ) {}
 
-  findAll() {
-    return this.repo.find({ relations: ['company', 'provider'] });
+  findAll(companyId: string) {
+    return this.repo.find({
+      where: { company: { id: companyId } },
+      relations: ['company', 'provider'],
+    });
   }
 
-  findOne(id: string) {
+  findOne(id: string, companyId: string) {
     return this.repo.findOne({
-      where: { id },
+      where: { id, company: { id: companyId } },
       relations: ['company', 'provider', 'transactions'],
     });
   }

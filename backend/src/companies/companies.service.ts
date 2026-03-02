@@ -10,13 +10,9 @@ export class CompaniesService {
     private readonly repo: Repository<Companies>,
   ) {}
 
-  findAll() {
-    return this.repo.find();
-  }
-
-  findOne(id: string) {
+  findMine(companyId: string) {
     return this.repo.findOne({
-      where: { id },
+      where: { id: companyId },
       relations: ['users', 'integrations'],
     });
   }

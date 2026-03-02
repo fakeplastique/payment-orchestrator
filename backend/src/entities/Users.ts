@@ -38,6 +38,9 @@ export class Users {
   @OneToMany(() => AuditLogs, (auditLogs) => auditLogs.user)
   auditLogs: AuditLogs[];
 
+  @Column("uuid", { name: "company_id" })
+  companyId: string;
+
   @ManyToOne(() => Companies, (companies) => companies.users, {
     onDelete: "CASCADE",
   })
