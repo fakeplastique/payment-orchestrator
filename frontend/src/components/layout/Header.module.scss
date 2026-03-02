@@ -1,0 +1,21 @@
+.header {
+  height: var(--header-height);
+  border-bottom: 1px solid var(--color-border);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0 24px;
+  background: var(--color-surface);
+  flex-shrink: 0;
+}
+
+.title {
+  font-weight: 600;
+  font-size: 15px;
+}
+
+.status {
+  color: var(--color-success);
+  font-size: 12px;
+  font-weight: 500;
+}
