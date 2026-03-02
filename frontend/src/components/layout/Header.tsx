@@ -10,7 +10,7 @@ export function Header() {
     <header className={styles.header}>
       <span className={styles.title}>Payment Orchestrator</span>
       <div className={styles.actions}>
-        <span className={styles.status}>Live</span>
+        {/* <span className={styles.status}>Live</span> */}
         {user && (
           <>
             <span className={styles.userInfo}>
