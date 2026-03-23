@@ -1,0 +1,189 @@
+.page {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+
+.header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.heading {
+  font-size: 24px;
+  font-weight: 700;
+  letter-spacing: -0.02em;
+}
+
+.actions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.templateBtn {
+  font-size: 12px;
+  font-weight: 500;
+  color: var(--color-text-muted);
+  background: transparent;
+  border: 1px solid var(--color-border);
+  border-radius: 7px;
+  padding: 7px 14px;
+  cursor: pointer;
+  transition: color var(--transition), border-color var(--transition);
+
+  &:hover {
+    color: var(--color-text);
+    border-color: rgba(255, 255, 255, 0.15);
+  }
+}
+
+.importBtn {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 12px;
+  font-weight: 600;
+  color: #fff;
+  background: var(--color-primary);
+  border: none;
+  border-radius: 7px;
+  padding: 7px 14px;
+  cursor: pointer;
+  transition: opacity var(--transition);
+
+  &:hover {
+    opacity: 0.85;
+  }
+}
+
+.tableCard {
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius);
+  overflow-x: auto;
+}
+
+/* ── Import preview ── */
+
+.importCard {
+  background: var(--color-surface);
+  border: 1px solid rgba(129, 140, 248, 0.3);
+  border-radius: var(--radius);
+  overflow: hidden;
+  box-shadow: 0 0 0 1px rgba(129, 140, 248, 0.06), var(--shadow-lg);
+}
+
+.importHeader {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 16px 20px;
+  border-bottom: 1px solid var(--color-border);
+  background: rgba(129, 140, 248, 0.05);
+}
+
+.importTitle {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--color-text);
+}
+
+.importMeta {
+  font-size: 12px;
+  color: var(--color-text-muted);
+  margin-left: 8px;
+  font-weight: 400;
+}
+
+.importActions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.cancelBtn {
+  font-size: 12px;
+  font-weight: 500;
+  color: var(--color-text-muted);
+  background: transparent;
+  border: 1px solid var(--color-border);
+  border-radius: 6px;
+  padding: 5px 12px;
+  cursor: pointer;
+  transition: color var(--transition);
+
+  &:hover {
+    color: var(--color-text);
+  }
+}
+
+.confirmBtn {
+  font-size: 12px;
+  font-weight: 600;
+  color: #fff;
+  background: var(--color-primary);
+  border: none;
+  border-radius: 6px;
+  padding: 5px 14px;
+  cursor: pointer;
+  transition: opacity var(--transition);
+
+  &:hover:not(:disabled) {
+    opacity: 0.85;
+  }
+
+  &:disabled {
+    opacity: 0.5;
+    cursor: default;
+  }
+}
+
+.previewWrap {
+  max-height: 320px;
+  overflow-y: auto;
+}
+
+/* ── Row statuses ── */
+
+.statusPending {
+  font-size: 11px;
+  color: var(--color-text-muted);
+}
+
+.statusSuccess {
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--color-success);
+}
+
+.statusError {
+  font-size: 11px;
+  font-weight: 500;
+  color: var(--color-danger);
+}
+
+.roleBadge {
+  display: inline-block;
+  font-size: 11px;
+  font-weight: 600;
+  padding: 2px 8px;
+  border-radius: 20px;
+  text-transform: capitalize;
+
+  &.admin {
+    background: rgba(248, 113, 113, 0.12);
+    color: var(--color-danger);
+  }
+
+  &.manager {
+    background: rgba(251, 191, 36, 0.12);
+    color: var(--color-warning);
+  }
+
+  &.user {
+    background: rgba(129, 140, 248, 0.12);
+    color: var(--color-primary);
+  }
+}
