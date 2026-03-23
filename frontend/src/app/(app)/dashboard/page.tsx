@@ -5,9 +5,7 @@ import { DashboardStats } from '@/lib/types';
 import { useFetch } from '@/lib/useFetch';
 import { KpiCard } from '@/components/ui/KpiCard';
 import { VolumeChart } from '@/components/charts/VolumeChart';
-import { StatusPieChart } from '@/components/charts/StatusPieChart';
 import { RevenueBarChart } from '@/components/charts/RevenueBarChart';
-import { FraudStatsChart } from '@/components/charts/FraudStatsChart';
 import styles from './dashboard.module.scss';
 
 export default function DashboardPage() {
@@ -42,31 +40,23 @@ export default function DashboardPage() {
       </div>
 
       <div className={styles.chartsGrid}>
-        <div className={`${styles.chartCard} ${styles.wide}`}>
-          <h2 className={styles.chartTitle}>Transaction Volume (30 days)</h2>
-          <div className={styles.chartWrap}>
+        <div className={styles.chartCard}>
+          <div className={styles.chartHeader}>
+            <h2 className={styles.chartTitle}>Transaction Volume</h2>
+            <span className={styles.chartBadge}>Last 30 days</span>
+          </div>
+          <div className={styles.volumeWrap}>
             <VolumeChart data={stats.volumeOverTime ?? []} />
           </div>
         </div>
 
         <div className={styles.chartCard}>
-          <h2 className={styles.chartTitle}>Status Distribution</h2>
-          <div className={styles.chartWrap}>
-            <StatusPieChart data={stats.statusDistribution ?? []} />
+          <div className={styles.chartHeader}>
+            <h2 className={styles.chartTitle}>Revenue by Currency</h2>
+            <span className={styles.chartBadge}>All time</span>
           </div>
-        </div>
-
-        <div className={styles.chartCard}>
-          <h2 className={styles.chartTitle}>Revenue by Currency</h2>
-          <div className={styles.chartWrap}>
+          <div className={styles.revenueWrap}>
             <RevenueBarChart data={stats.revenueByCurrency ?? []} />
-          </div>
-        </div>
-
-        <div className={styles.chartCard}>
-          <h2 className={styles.chartTitle}>Fraud Check Results</h2>
-          <div className={styles.chartWrap}>
-            <FraudStatsChart data={stats.fraudStats ?? []} />
           </div>
         </div>
       </div>
