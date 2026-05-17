@@ -31,70 +31,86 @@ export class SeedService {
   async run() {
     this.logger.log('Seeding database...');
 
-    // 1. Providers
+    // 1. Providers — find or create by name
     const providerNames = ['Stripe', 'PayPal', 'Adyen', 'Checkout.com', 'Worldpay'];
     const providers = await Promise.all(
-      providerNames.map((name) => this.providersRepo.save(this.providersRepo.create({ name }))),
+      providerNames.map(async (name) => {
+        const existing = await this.providersRepo.findOne({ where: { name } });
+        return existing ?? (await this.providersRepo.save(this.providersRepo.create({ name })));
+      }),
     );
-    this.logger.log(`Created ${providers.length} providers`);
+    this.logger.log(`Upserted ${providers.length} providers`);
 
-    // 2. Companies
+    // 2. Companies — find or create by name
     const companyNames = ['TechCorp', 'ShopOnline', 'GameStudio', 'FinanceHub', 'TravelPro'];
     const companies = await Promise.all(
-      companyNames.map((name) =>
-        this.companiesRepo.save(
-          this.companiesRepo.create({
-            name,
-            apiKeyHash: `hash_${name.toLowerCase()}_${Math.random().toString(36).slice(2)}`,
-          }),
-        ),
-      ),
+      companyNames.map(async (name) => {
+        const existing = await this.companiesRepo.findOne({ where: { name } });
+        return (
+          existing ??
+          (await this.companiesRepo.save(
+            this.companiesRepo.create({
+              name,
+              apiKeyHash: `hash_${name.toLowerCase()}_seed`,
+            }),
+          ))
+        );
+      }),
     );
-    this.logger.log(`Created ${companies.length} companies`);
+    this.logger.log(`Upserted ${companies.length} companies`);
 
-    // 3. Users (password: Password123!)
+    // 3. Users — find or create by email (password: Password123!)
     const roles = ['admin', 'manager', 'viewer'];
-    const users: Users[] = [];
     const passwordHash = await bcrypt.hash('Password123!', 12);
+    const users: Users[] = [];
     for (const company of companies) {
       for (let i = 0; i < 3; i++) {
         const role = roles[i];
-        const user = await this.usersRepo.save(
-          this.usersRepo.create({
-            email: `${role}@${company.name.toLowerCase().replace(/\s/g, '')}.com`,
-            passwordHash,
-            role,
-            lastLoginDate: this.randomDate(30),
-            company,
-          }),
-        );
+        const email = `${role}@${company.name.toLowerCase().replace(/\s/g, '')}.com`;
+        const existing = await this.usersRepo.findOne({ where: { email } });
+        const user =
+          existing ??
+          (await this.usersRepo.save(
+            this.usersRepo.create({
+              email,
+              passwordHash,
+              role,
+              lastLoginDate: this.deterministicDate(30, i),
+              company,
+            }),
+          ));
         users.push(user);
       }
     }
-    this.logger.log(`Created ${users.length} users`);
-    this.logger.log('Test credentials: any seeded email with password "Password123!"');
+    this.logger.log(`Upserted ${users.length} users`);
     this.logger.log('Example: manager@techcorp.com / Password123!');
 
-    // 4. Integrations
+    // 4. Integrations — find or create by company + provider
     const integrations: Integrations[] = [];
-    for (const company of companies) {
-      const numIntegrations = 1 + Math.floor(Math.random() * 3);
-      const shuffled = [...providers].sort(() => Math.random() - 0.5);
-      for (let i = 0; i < numIntegrations; i++) {
-        const integration = await this.integrationsRepo.save(
-          this.integrationsRepo.create({
-            company,
-            provider: shuffled[i],
-            credentials: { apiKey: `sk_test_${Math.random().toString(36).slice(2)}`, mode: 'test' },
-            isEnabled: Math.random() > 0.15,
-          }),
-        );
+    for (let ci = 0; ci < companies.length; ci++) {
+      const company = companies[ci];
+      const numIntegrations = 1 + (ci % 3);
+      for (let j = 0; j < numIntegrations; j++) {
+        const provider = providers[(ci + j) % providers.length];
+        const existing = await this.integrationsRepo.findOne({
+          where: { company: { id: company.id }, provider: { id: provider.id } },
+        });
+        const integration =
+          existing ??
+          (await this.integrationsRepo.save(
+            this.integrationsRepo.create({
+              company,
+              provider,
+              credentials: { apiKey: `sk_test_seed_${company.name}_${provider.name}`, mode: 'test' },
+              isEnabled: j === 0 ? true : ci % 4 !== 0,
+            }),
+          ));
         integrations.push(integration);
       }
     }
-    this.logger.log(`Created ${integrations.length} integrations`);
+    this.logger.log(`Upserted ${integrations.length} integrations`);
 
-    // 5. Fraud rules
+    // 5. Fraud rules — find or create by name
     const ruleData = [
       { name: 'High amount threshold', threshold: '5000.00' },
       { name: 'Velocity check', threshold: '0.80' },
@@ -103,42 +119,57 @@ export class SeedService {
       { name: 'Device fingerprint', threshold: '0.75' },
     ];
     const rules = await Promise.all(
-      ruleData.map((r) => this.fraudRulesRepo.save(this.fraudRulesRepo.create(r))),
+      ruleData.map(async (r) => {
+        const existing = await this.fraudRulesRepo.findOne({ where: { name: r.name } });
+        return existing ?? (await this.fraudRulesRepo.save(this.fraudRulesRepo.create(r)));
+      }),
     );
-    this.logger.log(`Created ${rules.length} fraud rules`);
+    this.logger.log(`Upserted ${rules.length} fraud rules`);
 
-    // 6. Transactions (500 over the last 60 days)
+    // 6. Transactions — find or create by deterministic externalId
     const statuses = ['success', 'failed', 'pending', 'refunded'];
     const currencies = ['USD', 'EUR', 'GBP', 'UAH', 'PLN'];
     const statusWeights = [0.65, 0.15, 0.12, 0.08];
     const transactions: Transactions[] = [];
 
     for (let i = 0; i < 500; i++) {
-      const integration = integrations[Math.floor(Math.random() * integrations.length)];
-      const status = this.weightedRandom(statuses, statusWeights);
-      const currency = currencies[Math.floor(Math.random() * currencies.length)];
-      const amount = (10 + Math.random() * 9990).toFixed(4);
+      const externalId = `seed_tx_${String(i).padStart(3, '0')}`;
+      const existing = await this.transactionsRepo.findOne({ where: { externalId } });
+      if (existing) {
+        transactions.push(existing);
+        continue;
+      }
+      const integration = integrations[i % integrations.length];
+      const status = this.weightedRandom(statuses, statusWeights, i);
+      const currency = currencies[i % currencies.length];
+      const amount = (10 + ((i * 19.97) % 9990)).toFixed(4);
 
       const tx = await this.transactionsRepo.save(
         this.transactionsRepo.create({
-          externalId: `ext_${Math.random().toString(36).slice(2, 10)}`,
+          externalId,
           amount,
           currency,
           status,
-          createdDate: this.randomDate(60),
+          createdDate: this.deterministicDate(60, i),
           integration,
         }),
       );
       transactions.push(tx);
     }
-    this.logger.log(`Created ${transactions.length} transactions`);
+    this.logger.log(`Upserted ${transactions.length} transactions`);
 
-    // 7. Fraud checks (~30% of transactions)
+    // 7. Fraud checks — skip if transaction already has any
     let fraudCheckCount = 0;
-    for (const tx of transactions) {
-      if (Math.random() > 0.3) continue;
-      const rule = rules[Math.floor(Math.random() * rules.length)];
-      const score = Math.random();
+    for (let i = 0; i < transactions.length; i++) {
+      if (i % 3 !== 0) continue;
+      const tx = transactions[i];
+      const alreadyExists = await this.fraudChecksRepo.findOne({
+        where: { transaction: { id: tx.id } },
+      });
+      if (alreadyExists) continue;
+
+      const rule = rules[i % rules.length];
+      const score = (i * 0.137) % 1;
       const isFlagged = score > parseFloat(rule.threshold);
 
       await this.fraudChecksRepo.save(
@@ -154,8 +185,14 @@ export class SeedService {
     }
     this.logger.log(`Created ${fraudCheckCount} fraud checks`);
 
-    // 8. Raw logs (one per transaction)
+    // 8. Raw logs — one per transaction, skip if already exists
+    let rawLogCount = 0;
     for (const tx of transactions) {
+      const alreadyExists = await this.rawLogsRepo.findOne({
+        where: { transaction: { id: tx.id } },
+      });
+      if (alreadyExists) continue;
+
       await this.rawLogsRepo.save(
         this.rawLogsRepo.create({
           transaction: tx,
@@ -169,10 +206,11 @@ export class SeedService {
           },
         }),
       );
+      rawLogCount++;
     }
-    this.logger.log(`Created ${transactions.length} raw logs`);
+    this.logger.log(`Created ${rawLogCount} raw logs`);
 
-    // 9. Audit logs
+    // 9. Audit logs — skip if user already has any
     let auditCount = 0;
     const actions = [
       'integration.created',
@@ -182,16 +220,22 @@ export class SeedService {
       'transaction.refunded',
       'fraud_rule.updated',
     ];
-    for (const user of users) {
-      const numLogs = 2 + Math.floor(Math.random() * 5);
+    for (let ui = 0; ui < users.length; ui++) {
+      const user = users[ui];
+      const alreadyExists = await this.auditLogsRepo.findOne({
+        where: { user: { id: user.id } },
+      });
+      if (alreadyExists) continue;
+
+      const numLogs = 2 + (ui % 5);
       for (let i = 0; i < numLogs; i++) {
         await this.auditLogsRepo.save(
           this.auditLogsRepo.create({
             user,
-            action: actions[Math.floor(Math.random() * actions.length)],
+            action: actions[(ui + i) % actions.length],
             oldValues: { status: 'before' },
             newValues: { status: 'after' },
-            performedDate: this.randomDate(30),
+            performedDate: this.deterministicDate(30, ui * 10 + i),
           }),
         );
         auditCount++;
@@ -200,16 +244,18 @@ export class SeedService {
     this.logger.log(`Created ${auditCount} audit logs`);
 
     this.logger.log('Seeding complete!');
+    return { message: 'Seeding complete' };
   }
 
-  private randomDate(daysBack: number): Date {
+  private deterministicDate(daysBack: number, index: number): Date {
     const now = Date.now();
     const past = now - daysBack * 24 * 60 * 60 * 1000;
-    return new Date(past + Math.random() * (now - past));
+    const fraction = (index * 0.618033988) % 1; // golden ratio spread
+    return new Date(past + fraction * (now - past));
   }
 
-  private weightedRandom<T>(items: T[], weights: number[]): T {
-    const r = Math.random();
+  private weightedRandom<T>(items: T[], weights: number[], seed: number): T {
+    const r = (seed * 0.618033988) % 1;
     let sum = 0;
     for (let i = 0; i < items.length; i++) {
       sum += weights[i];

@@ -16,6 +16,7 @@ import { FraudRulesModule } from './fraud-rules/fraud-rules.module';
 import { FraudChecksModule } from './fraud-checks/fraud-checks.module';
 import { DashboardModule } from './dashboard/dashboard.module';
 import { SeedModule } from './seed/seed.module';
+import { WebhooksModule } from './webhooks/webhooks.module';
 
 @Module({
   imports: [
@@ -50,6 +51,7 @@ import { SeedModule } from './seed/seed.module';
     FraudChecksModule,
     DashboardModule,
     SeedModule,
+    WebhooksModule,
   ],
   providers: [
     { provide: APP_GUARD, useClass: JwtAuthGuard },
