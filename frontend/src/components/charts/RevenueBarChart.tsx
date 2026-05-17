@@ -33,15 +33,16 @@ export function RevenueBarChart({ data }: Props) {
         data: data.map((d) => Number(d.total)),
         backgroundColor: (context: any) => {
           const { ctx, chartArea } = context.chart;
-          if (!chartArea) return PALETTE[context.dataIndex % PALETTE.length].from;
-          const { from, to } = PALETTE[context.dataIndex % PALETTE.length];
+          const palette = PALETTE[(context.dataIndex ?? 0) % PALETTE.length];
+          if (!chartArea) return palette.from;
+          const { from, to } = palette;
           const g = ctx.createLinearGradient(0, chartArea.top, 0, chartArea.bottom);
           g.addColorStop(0, from);
           g.addColorStop(1, to);
           return g;
         },
         hoverBackgroundColor: (context: any) =>
-          PALETTE[context.dataIndex % PALETTE.length].from,
+          PALETTE[(context.dataIndex ?? 0) % PALETTE.length].from,
         borderRadius: { topLeft: 7, topRight: 7 } as any,
         borderSkipped: false,
         barPercentage: 0.55,
